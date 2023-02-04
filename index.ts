@@ -11,11 +11,29 @@ app.get('/', (req: Request, res: Response) => {
   res.status(200).send('Hello World')
 })
 
-app.post('/documents', (req: Request, res: Response) => {
+app.post('/download-documents', (req: Request, res: Response) => {
   const data = req.body
   parseFiles(data)
-  res.status(200).send('ok')
+    .then((result) => {
+      res.status(200).json(result)
+    })
+    .catch((err) => {
+      res.status(500).send(err)
+    })
 })
+
+app.get('/queue', (req: Request, res: Response) => {})
+app.get('/queue/:id', (req: Request, res: Response) => {})
+app.get('/queue/:id/status', (req: Request, res: Response) => {})
+
+app.post('/signin', (req: Request, res: Response) => {})
+app.post('/signout', (req: Request, res: Response) => {})
+app.post('/signup', (req: Request, res: Response) => {})
+app.post('/forgot-password', (req: Request, res: Response) => {})
+app.post('/reset-password', (req: Request, res: Response) => {})
+app.post('/change-password', (req: Request, res: Response) => {})
+app.post('/change-email', (req: Request, res: Response) => {})
+app.post('/change-phone', (req: Request, res: Response) => {})
 
 app.listen(3666, () => {
   console.log('running')

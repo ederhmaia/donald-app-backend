@@ -5,7 +5,7 @@ import path from 'path'
 
 import { Customer, File } from 'types'
 
-const generateDoc = async (customer: Customer, file: File) => {
+const generateDoc = async (customer: Customer, file: File): Promise<Buffer> => {
   const doc = new Docxtemplater(new PizZip(file.binaryData), {
     paragraphLoop: true,
     linebreaks: true,
@@ -30,37 +30,50 @@ const generateDoc = async (customer: Customer, file: File) => {
 
   doc.render(placeholders)
 
-  const buf = doc.getZip().generate({
+  const DeflateBuffer = doc.getZip().generate({
     type: 'nodebuffer',
     compression: 'DEFLATE',
   })
-
-  fs.writeFileSync(path.resolve(__dirname, `./${name}/${file.fileName}.docx`), buf)
+  // check if folder exists
+  // if (!fs.existsSync(path.resolve(__dirname, `./${name}`))) {
+  //   fs.mkdirSync(path.resolve(__dirname, `./${name}`))
+  // }
+  return DeflateBuffer
 }
 
-const parseFiles = async (customer: Customer): Promise<void> => {
+const parseFiles = async (customer: Customer): Promise<any> => {
   const TEMPLATE_FOLDER: string = './templates'
 
-  fs.readdir(TEMPLATE_FOLDER, (err, files): File | null | void => {
-    if (err) {
-      console.error(err)
-      return null
+  const files: string[] = fs.readdirSync(TEMPLATE_FOLDER)
+  const docxFiles: string[] = files.filter((file) => path.extname(file) === '.docx')
+
+  const fileMap: File[] = docxFiles.map((docxFile): File => {
+    const binaryFile: string = fs.readFileSync(path.join(TEMPLATE_FOLDER, docxFile), 'binary')
+    return {
+      fileName: docxFile,
+      binaryData: binaryFile,
     }
+  })
+  const DocumentsBuffer: any = await Promise.all(
+    fileMap.map(async (binaryFile) => {
+      const Buffer = await generateDoc(customer, binaryFile)
+      const { data } = Buffer.toJSON()
 
-    const filterDocxFiles: string[] = files.filter((file) => path.extname(file) === '.docx')
-
-    const fileMap: File[] = filterDocxFiles.map((file): File => {
-      const binaryFile: string = fs.readFileSync(path.join(TEMPLATE_FOLDER, file), 'binary')
       return {
-        fileName: file,
-        binaryData: binaryFile,
+        file: binaryFile.fileName,
+        buffer: data,
       }
     })
+  )
 
-    fileMap.forEach((binaryFile) => {
-      generateDoc(customer, binaryFile)
-    })
-  })
+  return DocumentsBuffer
+
+  // const DocumentsBuffer = fileMap.map(async (binaryFile) => {
+  //   const Buffer = await generateDoc(customer, binaryFile)
+  //   console.log(Buffer)
+  //   console.log('-------------')
+  //   return { file: binaryFile.fileName, buffer: Buffer }
+  // })
 }
 
 export default parseFiles
