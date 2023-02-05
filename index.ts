@@ -15,7 +15,9 @@ app.post('/download-documents', (req: Request, res: Response) => {
   const data = req.body
   parseFiles(data)
     .then((result) => {
-      res.status(200).json(result)
+      result.map((r: any) => {
+        res.download(r.path, r.name)
+      })
     })
     .catch((err) => {
       res.status(500).send(err)

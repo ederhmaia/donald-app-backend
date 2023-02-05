@@ -6,38 +6,23 @@ import path from 'path'
 import { Customer, File } from 'types'
 
 const generateDoc = async (customer: Customer, file: File): Promise<Buffer> => {
-  const doc = new Docxtemplater(new PizZip(file.binaryData), {
+  const document = new Docxtemplater(new PizZip(file.binaryData), {
     paragraphLoop: true,
     linebreaks: true,
   })
 
-  const { name, phone, cpf, rg, birthDate, address, voterDoc, city, province, maritalStatus, jobTitle, signature }: Customer = customer
-
-  const placeholders: Customer = {
-    name,
-    phone,
-    cpf,
-    rg,
-    birthDate,
-    address,
-    voterDoc,
-    city,
-    province,
-    maritalStatus,
-    jobTitle,
-    signature: signature.toUpperCase(),
+  const placeholders = {
+    ...customer,
+    signature: customer?.signature?.toUpperCase() ?? '',
   }
 
-  doc.render(placeholders)
+  document.render(placeholders)
 
-  const DeflateBuffer = doc.getZip().generate({
+  const DeflateBuffer = document.getZip().generate({
     type: 'nodebuffer',
     compression: 'DEFLATE',
   })
-  // check if folder exists
-  // if (!fs.existsSync(path.resolve(__dirname, `./${name}`))) {
-  //   fs.mkdirSync(path.resolve(__dirname, `./${name}`))
-  // }
+
   return DeflateBuffer
 }
 
@@ -54,26 +39,20 @@ const parseFiles = async (customer: Customer): Promise<any> => {
       binaryData: binaryFile,
     }
   })
-  const DocumentsBuffer: any = await Promise.all(
+  const DocumentsBuffer = await Promise.all(
     fileMap.map(async (binaryFile) => {
       const Buffer = await generateDoc(customer, binaryFile)
       const { data } = Buffer.toJSON()
 
       return {
         file: binaryFile.fileName,
-        buffer: data,
+        buffer: 'testing',
+        // buffer: data
       }
     })
   )
 
   return DocumentsBuffer
-
-  // const DocumentsBuffer = fileMap.map(async (binaryFile) => {
-  //   const Buffer = await generateDoc(customer, binaryFile)
-  //   console.log(Buffer)
-  //   console.log('-------------')
-  //   return { file: binaryFile.fileName, buffer: Buffer }
-  // })
 }
 
 export default parseFiles
